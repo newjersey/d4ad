@@ -72,7 +72,7 @@ jobs:
 workflows:
   build-test-deploy:
     jobs:
-      - build-and-test:
+      - build-and-test
 #          filters:
 #            branches:
 #              only: master
