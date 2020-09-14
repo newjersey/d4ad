@@ -13,9 +13,12 @@ export const getOccupationDetailFactory = (
       return inDemandOccupations.map((it) => it.soc).includes(soc);
     };
 
+    console.log(soc)
     const education = await getEducationText(soc);
+    console.log(education)
     return getOccupationDetailFromOnet(soc)
       .then(async (onetOccupationDetail: OccupationDetailPartial) => {
+        console.log(onetOccupationDetail)
         return {
           ...onetOccupationDetail,
           education: education,
