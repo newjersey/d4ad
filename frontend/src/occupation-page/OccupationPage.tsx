@@ -12,6 +12,7 @@ import { SomethingWentWrongPage } from "../error/SomethingWentWrongPage";
 import { NotFoundPage } from "../error/NotFoundPage";
 import { StatBlock } from "../components/StatBlock";
 import { formatMoney } from "accounting";
+import {formatPercentEmployed} from "../presenters/formatPercentEmployed";
 
 interface Props extends RouteComponentProps {
   soc?: string;
@@ -88,6 +89,15 @@ export const OccupationPage = (props: Props): ReactElement => {
             {occupationDetail.inDemand ? <InDemandTag /> : <></>}
 
             <div className="stat-block-stack mtm">
+              <StatBlock
+                title="Jobs Open in NJ"
+                data={
+                  parseInt(occupationDetail.openJobsCount) > -1
+                    ? parseInt(occupationDetail.openJobsCount).toLocaleString()
+                    : "--"
+                }
+                backgroundColorClass="bg-lightest-purple"
+              />
               <StatBlock
                 title="Median Salary"
                 data={
