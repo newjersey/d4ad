@@ -4,6 +4,7 @@ import {
   InDemandOccupation,
   OccupationDetail,
   OccupationDetailPartial,
+  Occupation
 } from "./occupations/Occupation";
 
 export type SearchTrainings = (searchQuery: string) => Promise<TrainingResult[]>;
@@ -15,3 +16,5 @@ export type GetOccupationDetailPartial = (soc: string) => Promise<OccupationDeta
 export type GetEducationText = (soc: string) => Promise<string>;
 export type GetSalaryEstimate = (soc: string) => Promise<number | null>;
 export type GetOpenJobsCount = (soc: string) => Promise<number | null>;
+// export type GetRelatedOccupations = (soc: string) => Promise<OccupationTitle[]>;
+export type Convert2010SocTo2018Soc = (soc2010: string) => Promise<Occupation>;

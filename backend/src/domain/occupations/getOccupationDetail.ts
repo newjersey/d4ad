@@ -67,7 +67,8 @@ export const getOccupationDetailFactory = (
             getOpenJobsCount(soc),
             getEducationText(soc),
             getSalaryEstimate(soc),
-          ]).then(([socDefinition, inDemand, openJobsCount, education, medianSalary]) => {
+            dataClient.getNeighboringOccupations(soc)
+          ]).then(([socDefinition, inDemand, openJobsCount, education, medianSalary, neighboringOccupations]) => {
             return {
               soc: socDefinition.soc,
               title: socDefinition.title,
@@ -77,6 +78,7 @@ export const getOccupationDetailFactory = (
               inDemand: inDemand,
               medianSalary: medianSalary,
               openJobsCount: openJobsCount,
+              relatedOccupations: neighboringOccupations
             };
           });
         }

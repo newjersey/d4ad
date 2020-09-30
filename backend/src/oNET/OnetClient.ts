@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from "axios";
-import { GetOccupationDetailPartial } from "../domain/types";
-import { OccupationDetailPartial } from "../domain/occupations/Occupation";
+import {Convert2010SocTo2018Soc, GetOccupationDetailPartial} from "../domain/types";
+import {Occupation, OccupationDetailPartial} from "../domain/occupations/Occupation";
 import { Error } from "../domain/Error";
 
 interface OnetResponse {
@@ -17,12 +17,24 @@ interface OnetTask {
   name: string;
 }
 
+interface OnetRelatedOccupationsResponse {
+  occupation: OnetOccupation[];
+}
+
+interface OnetOccupation {
+  code: string;
+}
+
 interface OnetAuth {
   username: string;
   password: string;
 }
 
-export const OnetClient = (baseUrl: string, auth: OnetAuth): GetOccupationDetailPartial => {
+export const OnetClient = (
+  baseUrl: string,
+  auth: OnetAuth,
+  convert2010SocTo2018Soc: Convert2010SocTo2018Soc,
+): GetOccupationDetailPartial => {
   const onetConfig = {
     auth: auth,
     headers: {
@@ -44,6 +56,21 @@ export const OnetClient = (baseUrl: string, auth: OnetAuth): GetOccupationDetail
       });
   };
 
+  const getRelatedOccupations = (soc: string): Promise<Occupation[]> => {
+    return axios
+      .get(`${baseUrl}/ws/online/occupations/${soc}.00/details/related_occupations?display=long`, onetConfig)
+      .then((response: AxiosResponse<OnetRelatedOccupationsResponse>): Promise<Occupation[]> => {
+        return Promise.all(response.data.occupation
+          .filter((occupation: OnetOccupation): boolean => occupation.code.split('.')[1] === '00')
+          .map((occupation: OnetOccupation): string => occupation.code.split('.')[0])
+          .map((soc2010: string): Promise<Occupation> => convert2010SocTo2018Soc(soc2010))
+        )
+      })
+      .catch(() => {
+        return Promise.resolve([]);
+      });
+  };
+
   return async (soc: string): Promise<OccupationDetailPartial> => {
     return axios
       .get(`${baseUrl}/ws/online/occupations/${soc}.00`, onetConfig)
@@ -55,6 +82,7 @@ export const OnetClient = (baseUrl: string, auth: OnetAuth): GetOccupationDetail
           title: response.data.title,
           description: response.data.description,
           tasks: await getTasks(soc),
+          relatedOccupations: await getRelatedOccupations(soc)
         };
       })
       .catch(() => {
