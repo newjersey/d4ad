@@ -23,8 +23,7 @@ export const Footer = (): ReactElement => {
             <Icon className="red" fontSize="inherit">
               favorite
             </Icon>
-            &nbsp;by
-            the Office of Innovation
+            &nbsp;by the Office of Innovation
           </p>
         </div>
       </div>
