@@ -3,20 +3,20 @@
     "driver": "pg",
     "host": { "ENV": "DB_HOST_DEV" },
     "user": "postgres",
-    "password": { "ENV": "DB_PASS_DEV" },
+    "password": { "ENV": "" },
     "database": "d4adlocal",
     "writer": {
       "driver": "pg",
       "host": { "ENV": "DB_HOST_DEV" },
       "user": "postgres",
-      "password": { "ENV": "DB_PASS_DEV" },
+      "password": { "ENV": "" },
       "database": "d4adlocal"
     },
     "reader": {
       "driver": "pg",
       "host": { "ENV": "DB_HOST_DEV" },
       "user": "postgres",
-      "password": { "ENV": "DB_PASS_DEV" },
+      "password": { "ENV": "" },
       "database": "d4adlocal"
     }
   },
