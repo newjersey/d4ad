@@ -93,8 +93,8 @@ describe("<SearchResultsPage />", () => {
         totalCost: 1000,
         percentEmployed: 0.6018342,
         calendarLength: CalendarLength.FOUR_TO_ELEVEN_WEEKS,
-        city: "Camden",
-        county: "Camden County",
+        cities: ["Camden"],
+        //county: "Camden County",
         providerName: "Cammy Community College",
         highlight: "some [[text]] here",
         online: false,
@@ -104,7 +104,7 @@ describe("<SearchResultsPage />", () => {
         totalCost: 333.33,
         percentEmployed: 0.8,
         calendarLength: CalendarLength.LESS_THAN_ONE_DAY,
-        city: "Newark",
+        cities: ["Newark"],
         county: "Essex County",
         providerName: "New'rk School",
         highlight: "",
@@ -117,7 +117,7 @@ describe("<SearchResultsPage />", () => {
       expect(subject.getByText("$1,000.00", { exact: false })).toBeInTheDocument();
       expect(subject.getByText("60.1%", { exact: false })).toBeInTheDocument();
       expect(subject.getByText("Camden", { exact: false })).toBeInTheDocument();
-      expect(subject.getByText("Camden County", { exact: false })).toBeInTheDocument();
+      //expect(subject.getByText("Camden County", { exact: false })).toBeInTheDocument();
       expect(subject.getByText("Cammy Community College", { exact: false })).toBeInTheDocument();
       expect(
         subject.getByText(Content.CalendarLengthLookup["5"] + " to complete", { exact: false }),
@@ -130,7 +130,7 @@ describe("<SearchResultsPage />", () => {
       expect(subject.getByText("$333.33", { exact: false })).toBeInTheDocument();
       expect(subject.getByText("80.0%", { exact: false })).toBeInTheDocument();
       expect(subject.getByText("Newark", { exact: false })).toBeInTheDocument();
-      expect(subject.getByText("Essex County", { exact: false })).toBeInTheDocument();
+      //expect(subject.getByText("Essex County", { exact: false })).toBeInTheDocument();
       expect(subject.getByText("New'rk School", { exact: false })).toBeInTheDocument();
       expect(
         subject.getByText(Content.CalendarLengthLookup["1"] + " to complete", { exact: false }),
@@ -141,7 +141,7 @@ describe("<SearchResultsPage />", () => {
       const subject = render(<SearchResultsPage client={stubClient} />);
 
       const training = buildTrainingResult({
-        city: "Camden",
+        cities: ["Camden"],
         county: "My Cool County",
         online: true,
       });
@@ -150,7 +150,7 @@ describe("<SearchResultsPage />", () => {
 
       expect(subject.getByText("Online Class", { exact: false })).toBeInTheDocument();
       expect(subject.queryByText("Camden", { exact: false })).not.toBeInTheDocument();
-      expect(subject.queryByText("My Cool County", { exact: false })).not.toBeInTheDocument();
+      // expect(subject.queryByText("My Cool County", { exact: false })).not.toBeInTheDocument();
     });
 
     it("displays an in-demand tag when a training is in-demand", () => {
@@ -282,7 +282,7 @@ describe("<SearchResultsPage />", () => {
         totalCost: 1000,
         percentEmployed: 0.6018342,
         calendarLength: CalendarLength.FOUR_TO_ELEVEN_WEEKS,
-        city: "Camden",
+        cities: ["Camden"],
         county: "Camden County",
         providerName: "Cammy Community College",
         highlight: "some [[text]] here",

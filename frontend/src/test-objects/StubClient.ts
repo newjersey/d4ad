@@ -4,6 +4,7 @@ import { Client, Observer } from "../domain/Client";
 import { Training, TrainingResult } from "../domain/Training";
 import { InDemandOccupation, OccupationDetail } from "../domain/Occupation";
 import { SearchArea } from "../filtering/LocationFilter";
+import { Certificates } from "../domain/CredentialEngine";
 import {
   FaqPageProps,
   FinancialResourcePageProps,
@@ -43,6 +44,16 @@ export class StubClient implements Client {
     this.capturedObserver = observer;
   }
 
+  getAllCertificates(
+    skip: number,
+    take: number,
+    sort: string,
+    cancel: boolean,
+    observer: Observer<Certificates>
+  ): void {
+    this.capturedObserver = observer;
+  }
+  
   getContentfulCPW(query: string, observer: Observer<CareerPathwaysPageProps>): void {
     this.capturedObserver = observer;
   }

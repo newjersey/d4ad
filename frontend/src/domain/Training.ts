@@ -13,8 +13,8 @@ export interface TrainingResult {
   online: boolean;
   providerId: string;
   providerName: string;
-  city: string;
-  zipCode: string;
+  cities: string[];
+  zipCodes: string[];
   county: string;
   highlight: string;
   rank: number;
@@ -33,7 +33,7 @@ export interface Training {
   calendarLength: CalendarLength;
   totalClockHours: number;
   description: string;
-  certifications: string;
+  certifications: ConditionProfile[];
   prerequisites: string;
   occupations: Occupation[];
   provider: Provider;
@@ -58,21 +58,46 @@ export interface Training {
 export interface Provider {
   id: string;
   name: string;
+  email: string;
   url: string;
-  address: Address;
-  contactName: string;
-  contactTitle: string;
-  phoneNumber: string;
-  phoneExtension: string;
-  county: string;
+  addresses: Address[];
 }
 
 export interface Address {
+  name: string;
   street1: string;
   street2: string;
   city: string;
   state: string;
   zipCode: string;
+  targetContactPoints: ContactPoint[];
+}
+
+export interface ContactPoint {
+  name?: string;
+  alternateName?: string;
+  contactType?: string;
+  email?: string[];
+  telephone?: string[];
+  faxNumber?: string[];
+  socialMedia?: string[];
+}
+
+export interface ConditionProfile {
+  name?: string;
+  experience?: string;
+  description?: string;
+  yearsOfExperience?: number;
+  targetAssessment: ConditionProfileItem[];
+  targetCompetency: ConditionProfileItem[];
+  targetCredential: ConditionProfileItem[];
+  targetLearningOpportunity: ConditionProfileItem[];
+}
+
+export interface ConditionProfileItem {
+  name?: string;
+  provider?: Provider;
+  description?: string;
 }
 
 export enum CalendarLength {

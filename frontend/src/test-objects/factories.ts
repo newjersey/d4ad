@@ -1,4 +1,12 @@
-import { Address, CalendarLength, Provider, Training, TrainingResult } from "../domain/Training";
+import {
+  Address,
+  CalendarLength,
+  ConditionProfile,
+  ConditionProfileItem,
+  Provider,
+  Training,
+  TrainingResult
+} from "../domain/Training";
 import { InDemandOccupation, Occupation, OccupationDetail } from "../domain/Occupation";
 
 const randomInt = (): number => Math.floor(Math.random() * Math.floor(10000000));
@@ -18,8 +26,8 @@ export const buildTrainingResult = (overrides: Partial<TrainingResult>): Trainin
     online: randomBool(),
     providerId: "some-id-" + randomInt(),
     providerName: "some-provider-name-" + randomInt(),
-    city: "some-city-" + randomInt(),
-    zipCode: "some-zipcode-" + randomInt(),
+    cities: ["some-city-" + randomInt(), "some-city-" + randomInt()],
+    zipCodes: ["some-zipcode-" + randomInt(), "some-zipcode-" + randomInt()],
     county: "some-county-" + randomInt(),
     highlight: "some-highlight-" + randomInt(),
     rank: randomInt(),
@@ -43,7 +51,7 @@ export const buildTraining = (overrides: Partial<Training>): Training => {
     totalClockHours: randomInt(),
     occupations: [buildOccupation({})],
     description: "some-description-" + randomInt(),
-    certifications: "some-certifications-" + randomInt(),
+    certifications: [buildConditionProfile({}), buildConditionProfile({})],
     prerequisites: "some-certifications-" + randomInt(),
     inDemand: randomBool(),
     localExceptionCounty: ["some-county-" + randomInt()],
@@ -69,24 +77,28 @@ export const buildProvider = (overrides: Partial<Provider>): Provider => {
   return {
     id: "some-id-" + randomInt(),
     name: "some-provider-name-" + randomInt(),
+    email: "some-provider-email-" + randomInt() + "@FAKE-PROVIDER-DOMAIN.com",
     url: "some-url-" + randomInt(),
-    address: buildAddress({}),
-    contactName: "some-contactName-" + randomInt(),
+    addresses: [buildAddress({}), buildAddress({})],
+    /*contactName: "some-contactName-" + randomInt(),
     contactTitle: "some-contactTitle-" + randomInt(),
     phoneNumber: "some-phoneNumber-" + randomInt(),
     phoneExtension: "some-phoneExtension-" + randomInt(),
-    county: "some-county-" + randomInt(),
+    phoneExtension: "some-phoneExtension-" + randomInt(),
+    county: "some-county-" + randomInt(),*/
     ...overrides,
   };
 };
 
 export const buildAddress = (overrides: Partial<Address>): Address => {
   return {
+    name: "some-location-name-" + randomInt(),
     street1: "some-street1-" + randomInt(),
     street2: "some-street2-" + randomInt(),
     city: "some-city-" + randomInt(),
     state: "some-state-" + randomInt(),
     zipCode: "some-zipCode-" + randomInt(),
+    targetContactPoints: [],
     ...overrides,
   };
 };
@@ -126,6 +138,29 @@ export const buildOccupationDetail = (overrides: Partial<OccupationDetail>): Occ
     ...overrides,
   };
 };
+
+export const buildConditionProfile = (overrides: Partial<ConditionProfile>): ConditionProfile => {
+  return {
+    name: "some-name-" + randomInt(),
+    experience: "some-experience-" + randomInt(),
+    description: "some-description-" + randomInt(),
+    yearsOfExperience: randomInt(),
+    targetAssessment: [buildConditionProfileItem({}), buildConditionProfileItem({}), buildConditionProfileItem({})],
+    targetCompetency: [buildConditionProfileItem({}), buildConditionProfileItem({}), buildConditionProfileItem({})],
+    targetCredential: [buildConditionProfileItem({}), buildConditionProfileItem({}), buildConditionProfileItem({})],
+    targetLearningOpportunity: [buildConditionProfileItem({}), buildConditionProfileItem({}), buildConditionProfileItem({})],
+    ...overrides,
+  };
+}
+
+export const buildConditionProfileItem = (overrides: Partial<ConditionProfileItem>): ConditionProfileItem => {
+  return {
+    name: "some-name-" + randomInt(),
+    provider: buildProvider({}),
+    description: "some-description-" + randomInt(),
+    ...overrides,
+  };
+}
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const randomCalendarLength = (): CalendarLength => {

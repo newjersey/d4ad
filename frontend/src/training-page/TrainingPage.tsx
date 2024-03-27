@@ -21,7 +21,7 @@ import { formatPercentEmployed } from "../presenters/formatPercentEmployed";
 
 import { Icon } from "@material-ui/core";
 import { formatMoney } from "accounting";
-import { parsePhoneNumberFromString } from "libphonenumber-js";
+// import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { useReactToPrint } from "react-to-print";
 import { PROVIDER_MISSING_INFO, STAT_MISSING_DATA_INDICATOR } from "../constants";
 import { Trans, useTranslation } from "react-i18next";
@@ -115,54 +115,89 @@ export const TrainingPage = (props: Props): ReactElement => {
     );
   };
 
-  const getProviderAddress = (): ReactElement => {
-    if (training?.online) {
-      return <>{t("TrainingPage.onlineClass")}</>;
-    }
-
-    if (!training || !training.provider.address.city) {
-      return <>{PROVIDER_MISSING_INFO}</>;
-    }
-
-    const address = training.provider.address;
-    const nameAndAddressEncoded = encodeURIComponent(
-      `${training.provider.name} ${address.street1} ${address.street2} ${address.city} ${address.state} ${address.zipCode}`,
-    );
-    const googleUrl = `https://www.google.com/maps/search/?api=1&query=${nameAndAddressEncoded}`;
-
-    return (
-      <a href={googleUrl} target="_blank" className="link-format-blue" rel="noopener noreferrer">
-        <div className="inline">
-          <span>{address.street1}</span>
-          <div>{address.street2}</div>
-          <div>
-            {address.city}, {address.state} {address.zipCode}
-          </div>
-        </div>
-      </a>
-    );
-  };
-
-  const getProviderContact = (): ReactElement => {
-    if (!training) {
+  const getProviderEmail = (): ReactElement => {
+    if (!training?.provider?.email) {
       return <></>;
     }
 
-    let phoneNumber = parsePhoneNumberFromString(
-      training.provider.phoneNumber,
-      "US",
-    )?.formatNational();
-    if (training.provider.phoneExtension) {
-      phoneNumber = `${phoneNumber} Ext: ${training.provider.phoneExtension}`;
+    return (
+      <p>
+        <span className="fin fas">
+          <InlineIcon className="mrxs">email</InlineIcon>
+            <a href={`mailto:${training.provider.email}`}>{training.provider.email}</a>
+        </span>
+      </p>
+    )
+  }
+
+  const getProviderAddress = (): ReactElement => {
+    if (training?.online) {
+      return (
+        <div>
+          <div><InlineIcon className="mrxs">location_on</InlineIcon>{t("TrainingPage.onlineClass")}</div>
+        </div>
+      );
+
     }
 
-    return (
-      <div className="inline">
-        <span>{training.provider.contactName}</span>
-        <div>{training.provider.contactTitle}</div>
-        <div>{phoneNumber}</div>
-      </div>
-    );
+    if (!training || !training.provider.addresses) {
+      return <>{PROVIDER_MISSING_INFO}</>;
+    }
+
+    const addresses = training.provider.addresses;
+    const addressBlocks = [];
+
+    for (let i=0; i < addresses.length; i++) {
+      // assign individual address object properties to variables
+      // const thisAddressName = addresses[i].name;
+      const thisAddressStreet1 = addresses[i].street1;
+      const thisAddressStreet2 = "";
+      const thisAddressCity = addresses[i].city;
+      const thisAddressState = addresses[i].state;
+      const thisAddressZipCode = addresses[i].zipCode;
+      const thisAddressTargetContactPoints = addresses[i].targetContactPoints;
+
+      // build target contact points HTML blocks
+      const thisAddressTargetContactPointsBlocks = [];
+      for (let j=0; j < thisAddressTargetContactPoints.length; j++) {
+
+        // assign individual contact point object properties to variables
+        const thisContactPointName = thisAddressTargetContactPoints[j].name
+        // const thisContactPointContactType = thisAddressTargetContactPoints[j].contactType
+        // const thisContactPointEmail = thisAddressTargetContactPoints[j].email
+        // const thisContactPointTelephone = thisAddressTargetContactPoints[j].telephone
+        // const thisContactPointSocialMedia = thisAddressTargetContactPoints[j].socialMedia
+
+        // push to HTML content blocks
+        thisAddressTargetContactPointsBlocks.push(
+          <div>
+            <div><InlineIcon className="mrxs">person</InlineIcon>{thisContactPointName}</div>
+          </div>
+        );
+      }
+
+      const nameAndAddressEncoded = encodeURIComponent(
+        `${training.provider.name} ${thisAddressStreet1} ${thisAddressStreet2} ${thisAddressCity} ${thisAddressState} ${thisAddressZipCode}`
+      );
+
+      const googleUrl = `https://www.google.com/maps/search/?api=1&query=${nameAndAddressEncoded}`;
+
+      addressBlocks.push(
+        <div>
+          <a href={googleUrl} target="_blank" className="link-format-blue" rel="noopener noreferrer">
+            <div className="inline">
+              <span>{thisAddressStreet1}</span>
+              <div>
+                {thisAddressCity}, {thisAddressState} {thisAddressZipCode}
+              </div>
+            </div>
+          </a>
+          <span>{thisAddressTargetContactPointsBlocks}</span>
+          <hr></hr>
+        </div>
+      );
+    }
+    return <div key={"addresses"}>{addressBlocks}</div>;
   };
 
   const getAssociatedOccupations = (): ReactElement => {
@@ -316,34 +351,33 @@ export const TrainingPage = (props: Props): ReactElement => {
                     </>
                   </Grouping>
 
-                  <Grouping title={t("TrainingPage.quickStatsGroupHeader")}>
-                    <>
-                      {training.certifications && (
-                        <p>
+                    <Grouping title={t("TrainingPage.quickStatsGroupHeader")}>
+                      <>
+                        {training.certifications && (
+                          <p>
                           <span className="fin">
                             <InlineIcon className="mrxs">school</InlineIcon>
                             {t("TrainingPage.certificationsLabel")}&nbsp;
                             <b>{training.certifications}</b>
                           </span>
-                        </p>
-                      )}
-                      {training.prerequisites && (
+                          </p>
+                        )}
+                        {training.prerequisites && (
+                          <p>
+                            <span className="fin">
+                              <InlineIcon className="mrxs">list_alt</InlineIcon>
+                              {t("TrainingPage.prereqsLabel")}&nbsp;<b>{training.prerequisites}</b>
+                            </span>
+                          </p>
+                        )}
                         <p>
                           <span className="fin">
-                            <InlineIcon className="mrxs">list_alt</InlineIcon>
-                            {t("TrainingPage.prereqsLabel")}&nbsp;<b>{training.prerequisites}</b>
-                          </span>
+                            <InlineIcon className="mrxs">av_timer</InlineIcon>
+                            {t("TrainingPage.completionTimeLabel")}&nbsp;
+                            <b>{t(`CalendarLengthLookup.${training.calendarLength}`)}</b>                            </span>
                         </p>
-                      )}
-                      <p>
-                        <span className="fin">
-                          <InlineIcon className="mrxs">av_timer</InlineIcon>
-                          {t("TrainingPage.completionTimeLabel")}&nbsp;
-                          <b>{t(`CalendarLengthLookup.${training.calendarLength}`)}</b>
-                        </span>
-                      </p>
-                      {training.totalClockHours && (
-                        <p>
+                        {training.totalClockHours && (
+                          <p>
                           <span className="fin">
                             <InlineIcon className="mrxs">schedule</InlineIcon>
                             {t("TrainingPage.totalClockHoursLabel")}&nbsp;
@@ -361,10 +395,10 @@ export const TrainingPage = (props: Props): ReactElement => {
                               })}
                             </b>
                           </span>
-                        </p>
-                      )}
-                      {training.cipCode && (
-                        <p>
+                          </p>
+                        )}
+                        {training.cipCode && (
+                          <p>
                           <span className="fin">
                             <InlineIcon className="mrxs">qr_code</InlineIcon>
                             {t("TrainingPage.cipCodeLabel")}&nbsp;
@@ -378,10 +412,10 @@ export const TrainingPage = (props: Props): ReactElement => {
                             <Tooltip id="totalClockHours-tooltip" className="custom-tooltip" />
                             <b>{t(training.cipCode)}</b>
                           </span>
-                        </p>
-                      )}
-                    </>
-                  </Grouping>
+                          </p>
+                        )}
+                      </>
+                    </Grouping>
 
                   <Grouping title={t("TrainingPage.associatedOccupationsGroupHeader")}>
                     <>{getAssociatedOccupations()}</>
@@ -469,24 +503,25 @@ export const TrainingPage = (props: Props): ReactElement => {
                     </>
                   </Grouping>
 
-                  <Grouping title={t("TrainingPage.providerGroupHeader")}>
+                  <Grouping title={t("TrainingPage.locationGroupHeader")}>
                     <>
                       <p>
                         <span className="fin fas">
-                          <InlineIcon className="mrxs">school</InlineIcon>
                           {training.provider.name}
                         </span>
                       </p>
+                      {getProviderEmail()}
                       <div className="mvd">
                         <span className="fin">
-                          <InlineIcon className="mrxs">location_on</InlineIcon>
                           {getProviderAddress()}
                         </span>
                       </div>
                       <div className="mvd">
                         <span className="fin">
                           <InlineIcon className="mrxs">person</InlineIcon>
+{/*
                           {getProviderContact()}
+*/}
                         </span>
                       </div>
                       <p>
@@ -547,8 +582,8 @@ export const TrainingPage = (props: Props): ReactElement => {
               </div>
             </div>
           </div>
-        </div>
-      </Layout>
+      </div>
+    </Layout>
     </div>
-  );
+);
 };

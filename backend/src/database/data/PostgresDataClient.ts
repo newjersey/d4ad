@@ -1,13 +1,13 @@
 import knex from "knex";
 import { type Knex } from "knex";
 import {
+  LocalException,
   SocDefinition,
   CipDefinition,
   Program,
   EducationText,
   SalaryEstimate,
   NullableOccupation,
-  LocalException,
 } from "../../domain/training/Program";
 import { DataClient } from "../../domain/DataClient";
 import { Occupation } from "../../domain/occupations/Occupation";
@@ -220,6 +220,15 @@ export class PostgresDataClient implements DataClient {
     return this.kdb("indemandsocs")
       .select("soc", "socdefinitions.soctitle as title")
       .leftOuterJoin("socdefinitions", "socdefinitions.soccode", "indemandsocs.soc")
+      .catch((e) => {
+        console.log("db error: ", e);
+        return Promise.reject();
+      });
+  };
+
+  getCIPsInDemand = async (): Promise<CipDefinition[]> => {
+    return this.kdb("indemandcips")
+      .select("cipcode as cipcode")
       .catch((e) => {
         console.log("db error: ", e);
         return Promise.reject();

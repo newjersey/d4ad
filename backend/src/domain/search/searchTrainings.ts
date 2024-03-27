@@ -1,71 +1,162 @@
-import { stripUnicode } from "../utils/stripUnicode";
-import { FindTrainingsBy, SearchTrainings } from "../types";
-import { TrainingResult } from "../training/TrainingResult";
-import { Training } from "../training/Training";
-import { SearchClient } from "./SearchClient";
-import { Selector } from "../training/Selector";
+import NodeCache from 'node-cache';
+import { SearchTrainings } from "../types";
 import * as Sentry from "@sentry/node";
+import { TrainingData } from "../training/TrainingResult";
+import { credentialEngineAPI } from "../../credentialengine/CredentialEngineAPI";
+import { credentialEngineUtils } from "../../credentialengine/CredentialEngineUtils";
+import { CTDLResource } from "../credentialengine/CredentialEngine";
+import { CalendarLength } from "../CalendarLength";
+import { calculateTotalClockHoursFromEstimatedDuration, getAvailableAtAddress } from '../training/findTrainingsBy';
 
-export const searchTrainingsFactory = (
-  findTrainingsBy: FindTrainingsBy,
-  searchClient: SearchClient,
-): SearchTrainings => {
-  return async (searchQuery: string): Promise<TrainingResult[]> => {
-    try {
-      const searchResults = await searchClient.search(searchQuery);
-      const trainings = await findTrainingsBy(
-        Selector.ID,
-        searchResults.map((it) => it.id),
-      );
+// Initializing a simple in-memory cache
+const cache = new NodeCache({ stdTTL: 300, checkperiod: 120 });
 
-      return await Promise.all(
-        trainings.map(async (training: Training) => {
-          let highlight = "";
-          let rank = 0;
+export const searchTrainingsFactory = (): SearchTrainings => {
+  return async (params): Promise<TrainingData> => {
+    const page = params.page || 1
+    const limit = params.limit || 10
+    const cacheKey = `searchQuery-${params.searchQuery}-${page}-${limit}`;
+    if(cache.has(cacheKey)) {
+      const cachedResults = cache.get<TrainingData>(cacheKey);
+      console.log("Returning cached results");
+      if (cachedResults === undefined) {
+        throw new Error('Cached results are unexpectedly undefined.');
+      }
+      return cachedResults;
 
-          if (searchQuery) {
-            highlight = await searchClient.getHighlight(training.id, searchQuery);
-          }
-
-          if (searchResults) {
-            const foundRank = searchResults.find((it) => it.id === training.id)?.rank;
-            if (foundRank) {
-              rank = foundRank;
-            }
-          }
-
-          const result = {
-            id: training.id,
-            name: training.name,
-            cipCode: training.cipCode,
-            totalCost: training.totalCost,
-            percentEmployed: training.percentEmployed,
-            calendarLength: training.calendarLength,
-            totalClockHours: training.totalClockHours,
-            localExceptionCounty: training.localExceptionCounty,
-            online: training.online,
-            providerId: training.provider.id,
-            providerName: training.provider.name,
-            city: training.provider.address.city,
-            zipCode: training.provider.address.zipCode,
-            county: training.provider.county,
-            inDemand: training.inDemand,
-            highlight: stripUnicode(highlight),
-            rank: rank,
-            socCodes: training.occupations.map((o) => o.soc),
-            hasEveningCourses: training.hasEveningCourses,
-            languages: training.languages,
-            isWheelchairAccessible: training.isWheelchairAccessible,
-            hasJobPlacementAssistance: training.hasJobPlacementAssistance,
-            hasChildcareAssistance: training.hasChildcareAssistance,
-          };
-          return result;
-        }),
-      );
-    } catch (error) {
-      console.error(`Failed to search for trainings with the query: ${searchQuery}`, error);
-      Sentry.captureException(error);
-      throw error;
     }
+    const query = `
+      {
+        "@type": {
+          "search:value": "ceterms:Credential",
+          "search:matchType": "search:subClassOf"
+        },
+       "search:termGroup": {
+          "search:value": [
+            {
+              "ceterms:name": "${params.searchQuery}",
+              "ceterms:description": "${params.searchQuery}",
+              "ceterms:ownedBy": {
+                        "ceterms:name": "${params.searchQuery}"
+                    },
+              "search:operator": "search:orTerms"
+            },
+            {
+              "ceterms:credentialStatusType": {
+                "ceterms:targetNode": "credentialStat:Active"
+              },
+              "search:recordPublishedBy": "ce-cc992a07-6e17-42e5-8ed1-5b016e743e9d"
+            }
+          ],
+          "search:operator": "search:andTerms"
+        }
+      }`
+
+    const skip = (page-1) * limit;
+    const take = limit;
+    const sort = "^search:relevance";
+    const queryObj = JSON.parse(query);
+    
+    
+    const ceRecordsResponse = await credentialEngineAPI.getResults(queryObj, skip, take, sort).catch(error => {
+      Sentry.captureException(error);
+      throw new Error("Failed to fetch results from Credential Engine API");
+    });
+    const totalResults = ceRecordsResponse.data.extra.TotalResults
+    const totalPages = Math.ceil(totalResults / limit)
+    const hasPreviousPage = page > 1; 
+    const hasNextPage = page < totalPages
+    const ceRecords = ceRecordsResponse.data.data as CTDLResource[];
+
+      // console.log(ceRecords.map(r => r["ceterms:ctid"]));
+
+/*    const trainings = await findTrainingsBy(
+      Selector.ID,
+      ceRecords.map((it) => it["@id"])
+    )
+    console.log(JSON.stringify(trainings, null, 2));*/
+
+
+// Transform and cache each training result
+    
+    const results = await Promise.all(
+      ceRecords.map(async (certificate: CTDLResource) => {
+        const desc = certificate["ceterms:description"] ? certificate["ceterms:description"]["en-US"] : null;
+        let highlight = "";
+        if (desc) {
+          highlight = await credentialEngineUtils.getHighlight(desc, params.searchQuery);
+        }
+
+        const ownedBy = certificate["ceterms:ownedBy"] ? certificate["ceterms:ownedBy"] : [];
+        const ownedByCtid = await credentialEngineUtils.getCtidFromURL(ownedBy[0]);
+        const ownedByRecord = await credentialEngineAPI.getResourceByCTID(ownedByCtid);
+        // const ownedByAddressObject = ownedByRecord["ceterms:address"];
+        // const ownedByAddresses = [];
+        const totalClockHours = calculateTotalClockHoursFromEstimatedDuration(certificate);
+        const address = getAvailableAtAddress(certificate)
+        // if (ownedByAddressObject != null) {
+        //   for (const element of ownedByAddressObject) {
+        //     if (element["@type"] == "ceterms:Place" && element["ceterms:addressLocality"] != null) {
+        //       const address = {
+        //         city: element["ceterms:addressLocality"] ? element["ceterms:addressLocality"]["en-US"] : null,
+        //         zipCode: element["ceterms:postalCode"],
+        //       }
+        //       ownedByAddresses.push(address);
+        //     }
+        //   }
+        // }
+
+
+
+        return {
+          id: certificate["ceterms:ctid"] ? certificate["ceterms:ctid"] : "",
+          name: certificate["ceterms:name"] ? certificate["ceterms:name"]["en-US"] : "",
+          cipCode: "",
+          totalCost: 0,
+          percentEmployed: 0,
+          calendarLength: CalendarLength.NULL,
+          localExceptionCounty: [],
+
+          /*
+           inDemand: training.inDemand,
+           socCodes: training.occupations.map((o) => o.soc),
+           languages: training.languages,
+          */
+
+          online: certificate["ceterms:availableOnlineAt"] != null ? true : false,
+          providerId: ownedByCtid,
+          providerName: ownedByRecord['ceterms:name']['en-US'],
+          // cities: [avialableAt],
+          // zipCodes: ownedByAddresses.map(a => a.zipCode),
+          availableAt: address,
+          inDemand: false,
+          highlight: highlight,
+          socCodes: [],
+          hasEveningCourses: false,
+          languages: "",
+          isWheelchairAccessible: false,
+          hasJobPlacementAssistance: false,
+          hasChildcareAssistance: false,
+          totalClockHours: totalClockHours
+        };
+      })
+    );
+
+    const data = {
+      data: results,
+      meta: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalItems: totalResults,
+        itemsPerPage: limit,
+        hasNextPage: hasNextPage,
+        hasPreviousPage: hasPreviousPage,
+        nextPage: hasNextPage ? page + 1 : null,
+        previousPage: hasPreviousPage ? page -1 : null
+      }
+  }
+    // Cache the final results before returning
+    cache.set(cacheKey, data);
+    return data
   };
 };
